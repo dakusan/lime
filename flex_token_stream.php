@@ -13,10 +13,15 @@ abstract class flex_scanner {
 			throw new Exception("$path is not readable.");
 		}
 
-		putenv("PHP_LIME_SCAN_STDIN=$path");
-
 		$scanner = $this->executable();
-		$tokens = explode("\0", `$scanner < "\$PHP_LIME_SCAN_STDIN"`);
+		$Proc=proc_open($scanner, Array(Array("pipe", "r"), Array("pipe", "w")), $Pipes);
+		if(!is_resource($Proc))
+			throw new Exception("$scanner execution failed");
+		fwrite($Pipes[0], file_get_contents($path));
+		fclose($Pipes[0]);
+		$tokens = explode("\0", stream_get_contents($Pipes[1]));
+		fclose($Pipes[1]);
+		proc_close($Proc);
 
 		array_pop($tokens);
 		$this->tokens = $tokens;
